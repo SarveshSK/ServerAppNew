@@ -1,121 +1,32 @@
-<style type="text/css">
-body {
-  padding: 100px;
-}
-
-.range {
-  position: relative;
-  width: 1000px;
-  height: 5px;
-}
-
-.range input {
-  width: 100%;
-  position: absolute;
-  top: 2px;
-  height: 0;
-  -webkit-appearance: none;
-}
-.range input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  margin: -8px 0  0;
-  border-radius: 50%;
-  background: #37adbf;
-  cursor: pointer;
-  border: 0 !important;
-}
-.range input::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  margin: -8px 0  0;
-  border-radius: 50%;
-  background: #37adbf;
-  cursor: pointer;
-  border: 0 !important;
-}
-.range input::-ms-thumb {
-  width: 18px;
-  height: 18px;
-  margin: -8px 0  0;
-  border-radius: 50%;
-  background: #37adbf;
-  cursor: pointer;
-  border: 0 !important;
-}
-.range input::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 2px;
-  cursor: pointer;
-  background: #b2b2b2;
-}
-.range input::-moz-range-track {
-  width: 100%;
-  height: 2px;
-  cursor: pointer;
-  background: #b2b2b2;
-}
-.range input::-ms-track {
-  width: 100%;
-  height: 2px;
-  cursor: pointer;
-  background: #b2b2b2;
-}
-.range input:focus {
-  background: none;
-  outline: none;
-}
-.range input::-ms-track {
-  width: 100%;
-  cursor: pointer;
-  background: transparent;
-  border-color: transparent;
-  color: transparent;
-}
-
-.range-labels {
-  margin: 18px -41px 0;
-  padding: 0;
-  list-style: none;
-}
-.range-labels li {
-  position: relative;
-  float: left;
-  width: 90.25px;
-  text-align: center;
-  color: #b2b2b2;
-  font-size: 14px;
-  cursor: pointer;
-}
-.range-labels li::before {
-  position: absolute;
-  top: -25px;
-  right: 0;
-  left: 0;
-  content: "";
-  margin: 0 auto;
-  width: 9px;
-  height: 9px;
-  background: #b2b2b2;
-  border-radius: 50%;
-}
-.range-labels .active {
-  color: #37adbf;
-}
-.range-labels .selected::before {
-  background: #37adbf;
-}
-.range-labels .active.selected::before {
-  display: none;
-}
-
-</style>
-
-<php echo $message; ?>
-
 <script type="text/javascript">
-	angular.module("filterApp", []).controller("filterDemo", filterDemo)
+
+function csvJSON(csv){
+
+  var lines=csv.split("\n");
+
+  var result = [];
+
+  var headers=lines[0].split(",");
+
+  for(var i=1;i<lines.length;i++){
+
+	  var obj = {};
+	  var currentline=lines[i].split(",");
+
+	  for(var j=0;j<headers.length;j++){
+		  obj[headers[j]] = currentline[j];
+	  }
+
+	  result.push(obj);
+
+  }
+  return result;
+}
+
+
+angular.module("filterApp", []).controller("filterDemo", filterDemo)
+
+
 
 function filterDemo() {
   let vm = this;
@@ -123,48 +34,109 @@ function filterDemo() {
   vm.hdd = "NODATA";
   vm.location = "NODATA";
   vm.storage = 'NODATA';
+  vm.names = [];
 
 
-  vm.names = [{model:'HP DL120G7Intel Xeon E3-1230',ram:'16GBDDR3',hdd:'SAS',location:'Washington D.C.WDC-01',price:'$105.99'},{model:'SP DL120G7Intel Xeon E3-1230',ram:'32GBDDR3',hdd:'SATA',location:'Newyork D.C.WDC-01',price:'$110'}];
+ $.ajax({
+        type: "GET",
+        url: "LeaseWeb_servers_filters_assignment.csv",
+        dataType: "text",
+        success: function(data) {
+	vm.names = csvJSON(data);
+	}
+     });
+
 
   vm.locations = ['AmsterdamAMS-01', 'San FranciscoSFO-12', 'SingaporeSIN-11', 'Washington D.C.WDC-01', 'San FranciscoSFO-12','DallasDAL-10', 'FrankfurtFRA-10','Hong KongHKG-10', 'Newyork D.C.WDC-01'];
 
   vm.harddiskTypes = ['SAS', 'SATA', 'SSD'];
 
   vm.filterList = filterList
+
+	function checkgMatchingRam(ram){
+	var notFound = true;
+	if(ram){
+	for (i=0 ; i< $('input[name="ramGroup"]:checked').length;i++){
+		if (ram.indexOf($('input[name="ramGroup"]:checked')[i].value) == 0){
+			notFound  = false;
+			return true;
+		}
+	}
+}	
+	if(notFound){
+		return false;
+	} 
+
+	}
+
+function checkgMatchingStorage(hdd){
+	var notFound = true;
+	if(hdd){
+	for (i=0 ; i< $('ul li.selected').length;i++){
+		if (hdd.indexOf($('ul li.selected')[i].value) == 0){
+			notFound  = false;
+			return true;
+		}
+	}
+}	
+	if(notFound){
+		return false;
+	} 
+
+	}
+
+
   
   function filterList(row) {
+		
+	    if(vm && row.location == vm.location || (row.hdd && row.hdd.indexOf(vm.hdd) != -1) || checkgMatchingRam(row.ram) || checkgMatchingStorage(row.hdd)){
+	    	return true;
+	    }else{
+	    	return false;
+	    }
+       };
  
- vm.ram = ($('input[name="ramGroup"]:checked')[0])?$('input[name="ramGroup"]:checked')[0].value:'';
-
- vm.storage = ($('ul li.active')[0].innerHTML)?$('ul li.active')[0].innerHTML:'';
-
-    if(row.location == vm.location || row.hdd.includes(vm.hdd) || row.hdd.includes(vm.storage) || row.ram.includes(vm.ram)){
-    	return true;
-    }else{
-    	return false;
-    }
-  };
-
-  function setStorage($event){
-  	console.log($event);
-  }
-
 }
-
 
 
 </script>
 
-<div ng-app="filterApp" class="container" ng-controller="filterDemo as ctrl">
-  <h1>Filter Model, HDD, RAM, & Location</h1>
+
+
+<nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Lease Web</a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a target="_blank" href="https://github.com/SarveshSK/ServerAppNew.git">Github Link</a></li>
+              <li><a target="_blank" href="https://www.linkedin.com/in/sarvesh-kulkarni-0bb4233b/">About Sarvesh</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav>
+
+
+
+<div ng-app="filterApp" class="container" style="background-color: azure;" ng-controller="filterDemo as ctrl" >
+  <h1>Filter Servers with the following search options</h1>
   <hr />
 
+
  <div class='form-group'>
+<div class="row"><h4> Storage</h4></div>
         <div class='row'>
            <div class="right-inner-addon col-md-12 ">        
             <div class="range">
-			  <input type="range" min="1" max="12" steps="1" value="1" ng-mode="ctrl.hdd" ng-click="ctrl.setStorage($event)">
+			  <input type="range" min="1" max="12" steps="1" value="1" ng-model="ctrl.hdd">
 			</div>
 			
 		<ul class="range-labels">
@@ -186,37 +158,38 @@ function filterDemo() {
 </div>
 
     <div class='form-group'>
+<div class="row"><h4> Ram</h4></div>
         <div class='row'>
            <div class="right-inner-addon col-md-12">        
             <label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox1" value="2GB" name="ramGroup" ng-model="ctr.ram"> 2GB
+  				<input type="checkbox" id="inlineCheckbox1" value="2GB" name="ramGroup"ng-model="ctr.ram1"> 2GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox2" value="4GB" name="ramGroup" ng-model="ctr.ram1" > 4GB
+  				<input type="checkbox" id="inlineCheckbox2" value="4GB" name="ramGroup" ng-model="ctr.ram2"> 4GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox3" value="8GB" name="ramGroup" ng-model="ctr.ram2"> 8GB
+  				<input type="checkbox" id="inlineCheckbox3" value="8GB" name="ramGroup" ng-model="ctr.ram3"> 8GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox1" value="12GB" name="ramGroup" ng-model="ctr.ram3"> 12GB
+  				<input type="checkbox" id="inlineCheckbox1" value="12GB" name="ramGroup" ng-model="ctr.ram4"> 12GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox2" value="16GB" name="ramGroup" ng-model="ctr.ram4"> 16GB
+  				<input type="checkbox" id="inlineCheckbox2" value="16GB" name="ramGroup" ng-model="ctr.ram5"> 16GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox3" value="24GB" name="ramGroup" ng-model="ctr.ram5"> 24GB
+  				<input type="checkbox" id="inlineCheckbox3" value="24GB" name="ramGroup" ng-model="ctr.ram6"> 24GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox1" value="32GB" name="ramGroup" ng-model="ctr.ram6"> 32GB
+  				<input type="checkbox" id="inlineCheckbox1" value="32GB" name="ramGroup" ng-model="ctr.ram7"> 32GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox2" value="48GB" name="ramGroup" ng-model="ctr.ram7"> 48GB
+  				<input type="checkbox" id="inlineCheckbox2" value="48GB" name="ramGroup" ng-model="ctr.ram8"> 48GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox3" value="64GB" name="ramGroup" ng-model="ctr.ram8"> 64GB
+  				<input type="checkbox" id="inlineCheckbox3" value="64GB" name="ramGroup" ng-model="ctr.ram9"> 64GB
 			</label>
 			<label class="checkbox-inline big-checkbox">
-  				<input type="checkbox" id="inlineCheckbox3" value="96GB" name="ramGroup" ng-model="ctr.ram9"> 96GB
+  				<input type="checkbox" id="inlineCheckbox3" value="96GB" name="ramGroup" ng-model="ctr.ram10"> 96GB
 			</label>
           </div>
         </div>
@@ -224,19 +197,25 @@ function filterDemo() {
 
     <div class='form-group'>
         <div class='row'>
-    <div class="right-inner-addon col-md-4 ">        
+	<div class="form-group">
+   	 <div class="right-inner-addon col-md-4 ">    
+	<label class="col-md-4 control-label" for="textinput">Location</label>    
             <select class="form-control" ng-options="x for x in ctrl.locations" ng-model='ctrl.location'><option value="">--</option></select>
           </div>
-         
-          <div class="right-inner-addon col-md-4 ">        
+	</div>
+
+	<div class="form-group">
+          <div class="right-inner-addon col-md-4 ">   
+	<label class="col-md-4 control-label" for="textinput">HDD Type</label>     
             <select class="form-control" ng-options="x for x in ctrl.harddiskTypes" ng-model='ctrl.hdd'>
             <option value="">--</option>
 			</select>
           </div>
+</div>
           </div>
           </div>
         
-    <h3>Total Records : </h3>
+    <h3>Total Records : {{filtered.length }}</h3>
      <table class="table table-bordered" >
        <tr>
          <th>Model</th>
@@ -245,14 +224,15 @@ function filterDemo() {
          <th>Location</th>
          <th>price</th>
        <tr>
-       <tr ng-repeat="item in ctrl.names | filter:ctrl.filterList">
+       <tr ng-repeat="item in filtered = (ctrl.names | filter:ctrl.filterList)">
          <td>{{item.model}}</td>
          <td>{{item.ram}}</td>
          <td>{{item.hdd}}</td>
          <td>{{item.location}}</td>
-         <td>{{item.price}}</td>
+         <td>{{item.price | currency}}</td>
        <tr>
       </table>    
+	<tbody ng-if="filtered.length == 0"> Please Enter Your Search Criteria Above <tbody>
   </form>
   
 </div>
@@ -297,10 +277,5 @@ $('.range-labels li').on('click', function () {
   $rangeInput.val(index + 1).trigger('input');
 
   
-});
-
-
-$('input[type="checkbox"]').on('change', function() {
-    $('input[name="' + this.name + '"]').not(this).prop('checked', false);
 });
 </script>
